@@ -321,4 +321,25 @@ def main():
         # IRR Results
         st.subheader("IRR Results")
         st.write(f"Levered IRR: {levered_irr:.1%}")
-        st.write(f"Un
+        st.write(f"Unlevered IRR: {unlevered_irr:.1%}")
+        
+        # IRR Decomposition
+        st.subheader("IRR Decomposition")
+        decomposition = calculator.calculate_irr_decomposition(
+            entry_ebitda,
+            exit_ebitda,
+            entry_multiple,
+            exit_multiple,
+            levered_irr,
+            unlevered_irr
+        )
+        
+        decomposition_df = pd.DataFrame(
+            list(decomposition.items()),
+            columns=['Component', 'Value']
+        )
+        decomposition_df['Value'] = decomposition_df['Value'].apply(lambda x: f"{x:.1%}")
+        st.table(decomposition_df)
+
+if __name__ == "__main__":
+    main()
