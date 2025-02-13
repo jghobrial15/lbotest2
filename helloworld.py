@@ -17,33 +17,25 @@ class LBOCalculator:
     
     def calculate_debt_schedule(self, entry_debt, interest_rate, available_cash_flow):
         """Calculate debt schedule including beginning debt, paydown, and ending debt."""
-        debt_schedule = []
-        current_debt = entry_debt
+        debt_schedule = pd.DataFrame({
+            'beginning_debt': [0.0] * (self.years + 1),
+            'interest_payment': [0.0] * (self.years + 1),
+            'debt_paydown': [0.0] * (self.years + 1),
+            'ending_debt': [0.0] * (self.years + 1)
+        })
         
-        for year in range(self.years + 1):
-            if year == 0:
-                debt_schedule.append({
-                    'beginning_debt': entry_debt,
-                    'interest_payment': 0,
-                    'debt_paydown': 0,
-                    'ending_debt': entry_debt
-                })
-                continue
-                
-            interest_payment = current_debt * interest_rate
-            debt_paydown = min(available_cash_flow[year], current_debt)
-            ending_debt = current_debt - debt_paydown
+        # Initialize year 0
+        debt_schedule.loc[0, 'beginning_debt'] = entry_debt
+        debt_schedule.loc[0, 'ending_debt'] = entry_debt
+        
+        # Calculate subsequent years
+        for year in range(1, self.years + 1):
+            debt_schedule.loc[year, 'beginning_debt'] = debt_schedule.loc[year-1, 'ending_debt']
+            debt_schedule.loc[year, 'interest_payment'] = debt_schedule.loc[year, 'beginning_debt'] * interest_rate
+            debt_schedule.loc[year, 'debt_paydown'] = min(available_cash_flow[year], debt_schedule.loc[year, 'beginning_debt'])
+            debt_schedule.loc[year, 'ending_debt'] = debt_schedule.loc[year, 'beginning_debt'] - debt_schedule.loc[year, 'debt_paydown']
             
-            debt_schedule.append({
-                'beginning_debt': current_debt,
-                'interest_payment': interest_payment,
-                'debt_paydown': debt_paydown,
-                'ending_debt': ending_debt
-            })
-            
-            current_debt = ending_debt
-            
-        return pd.DataFrame(debt_schedule)
+        return debt_schedule
     
     def calculate_cash_flows(self, ebitda_schedule, debt_schedule, tax_rate, capex_pct):
         """Calculate available cash flows after interest, taxes, and capex."""
@@ -57,7 +49,7 @@ class LBOCalculator:
                 cash_flows.append(0)
                 continue
                 
-            interest = debt_schedule.iloc[year]['interest_payment']
+            interest = debt_schedule.loc[year, 'interest_payment']
             ebit = ebitda - capex
             taxes = max(0, (ebit - interest) * tax_rate)
             available_cash_flow = ebit - taxes - interest
@@ -69,7 +61,10 @@ class LBOCalculator:
     def calculate_irr(self, entry_equity, exit_equity, cash_flows):
         """Calculate IRR based on equity flows."""
         flows = [-entry_equity] + cash_flows[1:-1] + [exit_equity]
-        return npf.irr(flows)
+        try:
+            return npf.irr(flows)
+        except:
+            return 0.0  # Return 0 if IRR calculation fails
     
     def calculate_irr_decomposition(self, entry_ebitda, exit_ebitda, entry_multiple, 
                                   exit_multiple, levered_irr, unlevered_irr):
@@ -118,27 +113,30 @@ def main():
         entry_multiple = entry_tev / entry_ebitda
         ebitda_schedule = calculator.calculate_ebitda_schedule(entry_ebitda, ebitda_cagr)
         
-        # Calculate exit values
-        exit_ebitda = ebitda_schedule[-1]
-        exit_tev = exit_ebitda * exit_multiple
+        # Create initial debt schedule for first cash flow calculation
+        initial_debt_schedule = pd.DataFrame({
+            'beginning_debt': [0.0] * (calculator.years + 1),
+            'interest_payment': [0.0] * (calculator.years + 1),
+            'debt_paydown': [0.0] * (calculator.years + 1),
+            'ending_debt': [0.0] * (calculator.years + 1)
+        })
         
-        # Calculate equity values
-        entry_equity = entry_tev - entry_debt
-        
-        # Calculate cash flows and debt schedule
+        # Calculate initial cash flows
         initial_cash_flows = calculator.calculate_cash_flows(
             ebitda_schedule, 
-            pd.DataFrame([{'interest_payment': 0}]), 
+            initial_debt_schedule,
             tax_rate, 
             capex_pct
         )
         
+        # Calculate final debt schedule
         debt_schedule = calculator.calculate_debt_schedule(
             entry_debt, 
             interest_rate, 
             initial_cash_flows
         )
         
+        # Recalculate cash flows with final debt schedule
         cash_flows = calculator.calculate_cash_flows(
             ebitda_schedule,
             debt_schedule,
@@ -146,8 +144,13 @@ def main():
             capex_pct
         )
         
-        # Exit equity calculation
-        exit_equity = exit_tev - debt_schedule.iloc[-1]['ending_debt']
+        # Calculate exit values
+        exit_ebitda = ebitda_schedule[-1]
+        exit_tev = exit_ebitda * exit_multiple
+        
+        # Calculate equity values
+        entry_equity = entry_tev - entry_debt
+        exit_equity = exit_tev - debt_schedule.loc[calculator.years, 'ending_debt']
         
         # Calculate IRRs
         levered_irr = calculator.calculate_irr(entry_equity, exit_equity, cash_flows)
@@ -157,7 +160,7 @@ def main():
         unlevered_exit_equity = exit_tev
         unlevered_cash_flows = calculator.calculate_cash_flows(
             ebitda_schedule,
-            pd.DataFrame([{'interest_payment': 0}] * (calculator.years + 1)),
+            initial_debt_schedule,
             tax_rate,
             capex_pct
         )
@@ -180,7 +183,8 @@ def main():
         
         # Debt Schedule
         st.subheader("Debt Schedule")
-        st.dataframe(debt_schedule)
+        formatted_debt_schedule = debt_schedule.round(1)
+        st.dataframe(formatted_debt_schedule)
         
         # IRR Results
         st.subheader("IRR Results")
