@@ -223,18 +223,46 @@ def main():
         )
         
         # Show debt service capacity
-        st.write("\nStep 2: Debt Service Analysis")
-        debt_service_df = pd.DataFrame({
+        st.write("\nStep 2: Detailed Cash Flow and Debt Service Analysis")
+        detailed_analysis = pd.DataFrame({
             'Year': [f'Year {i}' for i in range(calculator.years + 1)],
-            'Available Cash Flow': initial_cash_flows,
-            'Interest Payment': debt_schedule.loc['Interest Payment'],
-            'Cash Available for Debt Paydown': [
-                max(0, cf - ip) for cf, ip in 
-                zip(initial_cash_flows, debt_schedule.loc['Interest Payment'])
-            ],
+            'EBITDA': ebitda_schedule,
+            'Less: Capex': [-e * capex_pct for e in ebitda_schedule],
+            'EBIT': [e - (e * capex_pct) for e in ebitda_schedule],
+            'Less: Interest': debt_schedule.loc['Interest Payment'],
+            'EBT': [e - (e * capex_pct) - i for e, i in zip(ebitda_schedule, debt_schedule.loc['Interest Payment'])],
+            'Less: Taxes': [-max(0, (e - (e * capex_pct) - i) * tax_rate) 
+                           for e, i in zip(ebitda_schedule, debt_schedule.loc['Interest Payment'])],
+            'Operating Cash Flow': initial_cash_flows,
+            'Available for Debt Paydown': [max(0, cf) for cf in initial_cash_flows],
             'Actual Debt Paydown': debt_schedule.loc['Debt Paydown'],
+            'Remaining Cash': [max(0, cf) - dp for cf, dp in 
+                             zip(initial_cash_flows, debt_schedule.loc['Debt Paydown'])]
         })
-        st.dataframe(debt_service_df.round(1))
+        st.dataframe(detailed_analysis.round(1))
+        
+        # Explain any differences
+        st.write("\nCash Flow vs Debt Paydown Analysis:")
+        for i in range(1, calculator.years + 1):
+            year = f'Year {i}'
+            cash_available = max(0, initial_cash_flows[i])
+            debt_paid = debt_schedule.loc['Debt Paydown', year]
+            beginning_debt = debt_schedule.loc['Beginning Debt', year]
+            interest = debt_schedule.loc['Interest Payment', year]
+            
+            st.write(f"\n{year}:")
+            st.write(f"Beginning Debt Balance: ${beginning_debt:.1f}M")
+            st.write(f"Interest Payment: ${interest:.1f}M")
+            st.write(f"Operating Cash Flow: ${initial_cash_flows[i]:.1f}M")
+            st.write(f"Cash Available for Debt Paydown: ${cash_available:.1f}M")
+            st.write(f"Actual Debt Paydown: ${debt_paid:.1f}M")
+            
+            if abs(cash_available - debt_paid) > 0.1:  # Check if there's a material difference
+                if beginning_debt < cash_available:
+                    st.write("Note: Debt paydown limited by remaining debt balance")
+                if cash_available < debt_paid:
+                    st.write("Warning: Debt paydown exceeds available cash flow - this needs to be fixed")
+
         
         # Calculate financial schedule
         financial_schedule = calculator.calculate_financial_schedule(
