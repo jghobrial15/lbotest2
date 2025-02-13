@@ -36,9 +36,10 @@ def calculate_lbo_irr(
         ebitda = ebitda_projection[year]
         taxes = (ebitda - interest_payment) * tax_rate
         free_cash_flow = ebitda - interest_payment - taxes
+        cash_available_to_equity = free_cash_flow - debt_repayment
         
-        debt_schedule.append((year, debt_balance, interest_payment, debt_repayment, free_cash_flow))
-        cash_flows.append(free_cash_flow)
+        debt_schedule.append((year, debt_balance, interest_payment, debt_repayment, free_cash_flow, cash_available_to_equity))
+        cash_flows.append(cash_available_to_equity)
     
     debt_repaid = entry_debt - debt_balance
     equity_value_at_exit = exit_tev - debt_balance
@@ -49,7 +50,7 @@ def calculate_lbo_irr(
     else:
         irr = npf.irr(cash_flows)
     
-    return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment", "Free Cash Flow"]), cash_flows
+    return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment", "Free Cash Flow", "Cash Available to Equity"]), cash_flows
 
 st.title("LBO Model Calculator")
 
