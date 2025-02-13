@@ -4,9 +4,7 @@ import pandas as pd
 import numpy_financial as npf
 
 def calculate_lbo_irr(
-    entry_revenue,
     entry_ebitda,
-    revenue_cagr,
     ebitda_cagr,
     entry_tev,
     exit_multiple,
@@ -15,10 +13,7 @@ def calculate_lbo_irr(
     years=5,
     interest_rate=0.05
 ):
-    revenue_growth = [(1 + revenue_cagr) ** i for i in range(years + 1)]
     ebitda_growth = [(1 + ebitda_cagr) ** i for i in range(years + 1)]
-    
-    revenue_projection = np.array(revenue_growth) * entry_revenue
     ebitda_projection = np.array(ebitda_growth) * entry_ebitda
     
     exit_ebitda = ebitda_projection[-1]
@@ -53,9 +48,8 @@ def calculate_lbo_irr(
     
     equity_value_at_exit = round(exit_tev - debt_balance + cash_balance, 1)
     cash_flows.extend([0] * (years - 1))
-    cash_flows.append(equity_value_at_exit)  # Replace last year cash flow with equity exit value only
+    cash_flows.append(equity_value_at_exit)
     
-    entry_equity = round(entry_tev - entry_debt + 0.0, 1)  # Include initial cash
     exit_equity = round(exit_tev - debt_balance + cash_balance, 1)
     
     equity_build = pd.DataFrame({
@@ -87,9 +81,7 @@ def calculate_lbo_irr(
 
 st.title("LBO Model Calculator")
 
-entry_revenue = float(st.number_input("Entry Revenue ($M)", value=100.0))
 entry_ebitda = float(st.number_input("Entry EBITDA ($M)", value=20.0))
-revenue_cagr = float(st.number_input("Revenue CAGR (%)", value=5.0)) / 100
 ebitda_cagr = float(st.number_input("EBITDA CAGR (%)", value=6.0)) / 100
 entry_tev = float(st.number_input("Entry TEV ($M)", value=150.0))
 exit_multiple = float(st.number_input("Exit Multiple", value=8.0))
@@ -98,7 +90,7 @@ tax_rate = float(st.number_input("Tax Rate (%)", value=25.0)) / 100
 
 if st.button("Calculate IRR"):
     equity_value_at_exit, irr, financials, debt_schedule, cash_schedule, equity_build, cash_flows = calculate_lbo_irr(
-        entry_revenue, entry_ebitda, revenue_cagr, ebitda_cagr, entry_tev,
+        entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, entry_debt, tax_rate
     )
     
