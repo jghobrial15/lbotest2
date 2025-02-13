@@ -78,13 +78,13 @@ def calculate_lbo_irr(
         ]
     })
     
-    entry_unlevered_net_income = round((entry_ebitda - (entry_ebitda * capex_percent)) * (1 - tax_rate), 1)
-    exit_unlevered_net_income = round((exit_ebitda - (exit_ebitda * capex_percent)) * (1 - tax_rate), 1)
+    entry_unlevered_net_income = round((ebitda_projection[1] - (ebitda_projection[1] * capex_percent)) * (1 - tax_rate), 1)
+    exit_unlevered_net_income = round((ebitda_projection[-1] - (ebitda_projection[-1] * capex_percent)) * (1 - tax_rate), 1)
     
     multiples_grid = pd.DataFrame({
-        "Metric": ["LTM EBITDA Multiple", "NTM EBITDA Multiple", "NTM Unlevered Net Income Multiple"],
-        "Entry": [round(entry_tev / entry_ebitda, 1), round(entry_tev / (entry_ebitda * (1 + ebitda_cagr)), 1), round(entry_tev / entry_unlevered_net_income, 1)],
-        "Exit": [round(exit_tev / exit_ebitda, 1), round(exit_tev / (exit_ebitda * (1 + ebitda_cagr)), 1), round(exit_tev / exit_unlevered_net_income, 1)]
+        "Metric": ["LTM EBITDA", "LTM EBITDA Multiple", "NTM EBITDA", "NTM EBITDA Multiple", "NTM Unlevered Net Income", "NTM Unlevered Net Income Multiple"],
+        "Entry": [round(entry_ebitda, 1), round(entry_tev / entry_ebitda, 1), round(ebitda_projection[1], 1), round(entry_tev / ebitda_projection[1], 1), round(entry_unlevered_net_income, 1), round(entry_tev / entry_unlevered_net_income, 1)],
+        "Exit": [round(exit_ebitda, 1), round(exit_tev / exit_ebitda, 1), round(ebitda_projection[-1], 1), round(exit_tev / ebitda_projection[-1], 1), round(exit_unlevered_net_income, 1), round(exit_tev / exit_unlevered_net_income, 1)]
     })
     
     if all(c <= 0 for c in cash_flows):
