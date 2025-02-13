@@ -88,12 +88,7 @@ def calculate_lbo_irr(
         "Exit": [round(exit_ebitda, 1), round(exit_tev / exit_ebitda, 1), round(ebitda_projection[-1], 1), round(exit_tev / ebitda_projection[-1], 1), round(exit_unlevered_net_income, 1), round(exit_tev / exit_unlevered_net_income, 1)]
     })
     
-    if all(c <= 0 for c in cash_flows):
-        irr = None  # Avoid calculation error
-    else:
-        irr = npf.irr(cash_flows)
-    
-    unlevered_cash_flows = [-entry_tev]
+    irr = npf.irr(cash_flows) if any(cash_flows) else Noneunlevered_cash_flows = [-entry_tev]
     for year in range(1, years + 1):
         unlevered_ebitda = ebitda_projection[year]
         unlevered_capex = round(unlevered_ebitda * capex_percent, 1)
@@ -102,9 +97,11 @@ def calculate_lbo_irr(
         unlevered_taxes = round(unlevered_taxable_income * tax_rate, 1)
         unlevered_free_cash_flow = round(unlevered_ebitda - unlevered_capex - unlevered_taxes, 1)
         unlevered_cash_flows.append(unlevered_free_cash_flow)
+    
+    unlevered_cash_flows.append(exit_tev)
+    
     unlevered_cash_flows[-1] += exit_tev
-    unlevered_cash_flows[-1] += exit_tev
-    unlevered_irr = npf.irr(unlevered_cash_flows)
+    unlevered_irr = npf.irr(unlevered_cash_flows) if any(unlevered_cash_flows) else None
     
     annualized_exit_multiple_change = ((exit_multiple / (entry_tev / entry_ebitda)) ** (1 / years)) - 1
     tev_growth = ((exit_tev / entry_tev) ** (1 / years)) - 1
