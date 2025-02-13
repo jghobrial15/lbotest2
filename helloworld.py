@@ -88,6 +88,23 @@ def calculate_lbo_irr(
         "Exit": [round(exit_ebitda, 1), round(exit_tev / exit_ebitda, 1), round(ebitda_projection[-1], 1), round(exit_tev / ebitda_projection[-1], 1), round(exit_unlevered_net_income, 1), round(exit_tev / exit_unlevered_net_income, 1)]
     })
     
+    unlevered_cash_flows = [-entry_tev]
+    for year in range(1, years + 1):
+        unlevered_cash_flows.append(financials[year][-1])
+    unlevered_cash_flows[-1] += exit_tev
+    unlevered_irr = npf.irr(unlevered_cash_flows)
+    
+    annualized_exit_multiple_change = ((exit_multiple / (entry_tev / entry_ebitda)) ** (1 / years)) - 1
+    tev_growth = ((exit_tev / entry_tev) ** (1 / years)) - 1
+    yield_rate = 1 / ebitda_projection[1]
+    covariance = unlevered_irr - (tev_growth + yield_rate)
+    leverage_impact = irr - unlevered_irr
+    
+    irr_decomposition = pd.DataFrame({
+        "Metric": ["EBITDA Growth", "Exit Multiple Change", "TEV Growth", "Yield", "Covariance", "Unlevered IRR", "Leverage Impact", "Levered IRR"],
+        "Value": [ebitda_cagr, annualized_exit_multiple_change, tev_growth, yield_rate, covariance, unlevered_irr, leverage_impact, irr]
+    })
+    
     if all(c <= 0 for c in cash_flows):
         irr = None  # Avoid calculation error
     else:
@@ -133,6 +150,9 @@ if st.button("Calculate IRR"):
     
     st.write("### Entry & Exit Multiples Grid")
     st.dataframe(multiples_grid)
+    
+    st.write("### IRR Decomposition")
+    st.dataframe(irr_decomposition)
     
     st.write("**Debugging:**")
     st.write("Cash Flows Debug:", cash_flows)
