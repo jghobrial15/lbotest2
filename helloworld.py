@@ -80,7 +80,7 @@ def calculate_lbo_irr(
     
     entry_unlevered_net_income = round((ebitda_projection[1] - (ebitda_projection[1] * capex_percent)) * (1 - tax_rate), 1)
     ntm_exit_ebitda = round(ebitda_projection[-1] * (1 + ebitda_cagr), 1)
-    exit_unlevered_net_income = round((ntm_exit_ebitda - (ntm_exit_ebitba * capex_percent)) * (1 - tax_rate), 1)
+    exit_unlevered_net_income = round((ntm_exit_ebitda - (ntm_exit_ebitda * capex_percent)) * (1 - tax_rate), 1)
     
     multiples_grid = pd.DataFrame({
         "Metric": ["LTM EBITDA", "LTM EBITDA Multiple", "NTM EBITDA", "NTM EBITDA Multiple", "NTM Unlevered Net Income", "NTM Unlevered Net Income Multiple"],
