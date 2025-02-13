@@ -49,7 +49,7 @@ def calculate_lbo_irr(
     else:
         irr = npf.irr(cash_flows)
     
-    return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment"])
+    return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment"]), cash_flows
 
 st.title("LBO Model Calculator")
 
@@ -63,7 +63,7 @@ entry_debt = float(st.number_input("Entry Debt ($M)", value=90.0))
 tax_rate = float(st.number_input("Tax Rate (%)", value=25.0)) / 100
 
 if st.button("Calculate IRR"):
-    equity_value_at_exit, irr, debt_schedule = calculate_lbo_irr(
+    equity_value_at_exit, irr, debt_schedule, cash_flows = calculate_lbo_irr(
         entry_revenue, entry_ebitda, revenue_cagr, ebitda_cagr, entry_tev,
         exit_multiple, entry_debt, tax_rate
     )
