@@ -72,40 +72,67 @@ class LBOCalculator:
     def calculate_debt_schedule(self, entry_debt, interest_rate, available_cash_flow):
         """Calculate debt schedule with years as columns."""
         years = [f"Year {i}" for i in range(self.years + 1)]
-        schedule = pd.DataFrame(index=['Beginning Debt', 'Interest Payment', 'Debt Paydown', 'Ending Debt'])
+        data = {}
         
-        # Initialize Year 0
-        schedule[years[0]] = [entry_debt, 0, 0, entry_debt]
+        # Initialize with zeros
+        for year in years:
+            data[year] = {
+                'Beginning Debt': 0,
+                'Interest Payment': 0,
+                'Debt Paydown': 0,
+                'Ending Debt': 0
+            }
+        
+        # Set initial values for Year 0
+        data['Year 0']['Beginning Debt'] = entry_debt
+        data['Year 0']['Ending Debt'] = entry_debt
         
         # Calculate subsequent years
         for year in range(1, self.years + 1):
-            beginning_debt = schedule[years[year-1]]['Ending Debt']
+            year_col = f'Year {year}'
+            prev_year_col = f'Year {year-1}'
+            
+            beginning_debt = data[prev_year_col]['Ending Debt']
             interest = beginning_debt * interest_rate
             debt_paydown = min(available_cash_flow[year], beginning_debt)
             ending_debt = beginning_debt - debt_paydown
             
-            schedule[years[year]] = [beginning_debt, interest, debt_paydown, ending_debt]
+            data[year_col]['Beginning Debt'] = beginning_debt
+            data[year_col]['Interest Payment'] = interest
+            data[year_col]['Debt Paydown'] = debt_paydown
+            data[year_col]['Ending Debt'] = ending_debt
         
-        return schedule
+        # Convert to DataFrame
+        schedule = pd.DataFrame(data).transpose()
+        return schedule.transpose()
     
     def calculate_cash_schedule(self, free_cash_flows, debt_paydown):
         """Calculate cash schedule with beginning cash, generation, and ending cash."""
         years = [f"Year {i}" for i in range(self.years + 1)]
-        schedule = pd.DataFrame(index=['Beginning Cash', 'Cash Generation', 'Less: Debt Paydown', 'Ending Cash'])
+        data = {}
         
-        # Initialize first year
-        schedule[years[0]] = [0, free_cash_flows[0], debt_paydown[0], free_cash_flows[0] - debt_paydown[0]]
+        # Initialize all years with zeros
+        for year in years:
+            data[year] = {
+                'Beginning Cash': 0,
+                'Cash Generation': 0,
+                'Less: Debt Paydown': 0,
+                'Ending Cash': 0
+            }
         
-        # Calculate subsequent years
-        for year in range(1, self.years + 1):
-            beginning_cash = schedule[years[year-1]]['Ending Cash']
-            cash_generation = free_cash_flows[year]
-            current_debt_paydown = debt_paydown[year]
-            ending_cash = beginning_cash + cash_generation - current_debt_paydown
-            
-            schedule[years[year]] = [beginning_cash, cash_generation, current_debt_paydown, ending_cash]
+        # Set values for each year
+        for i, year in enumerate(years):
+            if i > 0:
+                data[year]['Beginning Cash'] = data[years[i-1]]['Ending Cash']
+            data[year]['Cash Generation'] = free_cash_flows[i]
+            data[year]['Less: Debt Paydown'] = debt_paydown[i]
+            data[year]['Ending Cash'] = (data[year]['Beginning Cash'] + 
+                                       data[year]['Cash Generation'] - 
+                                       data[year]['Less: Debt Paydown'])
         
-        return schedule
+        # Convert to DataFrame
+        schedule = pd.DataFrame(data).transpose()
+        return schedule.transpose()
     
     def calculate_irr(self, entry_equity, exit_equity, cash_flows):
         """Calculate IRR based on equity flows."""
@@ -193,8 +220,8 @@ def main():
         
         # Calculate cash schedule
         cash_schedule = calculator.calculate_cash_schedule(
-            financial_schedule.loc['Free Cash Flow'].values,
-            debt_schedule.loc['Debt Paydown'].values
+            financial_schedule.loc['Free Cash Flow'],
+            debt_schedule.loc['Debt Paydown']
         )
         
         # Calculate exit values
