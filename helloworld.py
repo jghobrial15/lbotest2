@@ -93,9 +93,10 @@ def calculate_lbo_irr(
     
     irr = npf.irr(cash_flows) if any(cash_flows) else None
     
-    unlevered_irr = calculate_irr(
-        [-entry_tev] + [financials[year][-1] for year in range(1, years + 1)] + [exit_tev]
-    )
+    unlevered_irr = calculate_lbo_irr(
+        entry_ebitda, ebitda_cagr, entry_tev,
+        exit_multiple, 0, tax_rate, interest_rate, capex_percent
+    )[1]
     
     annualized_exit_multiple_change = ((exit_multiple / (entry_tev / entry_ebitda)) ** (1 / years)) - 1
     tev_growth = ((exit_tev / entry_tev) ** (1 / years)) - 1
