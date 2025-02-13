@@ -47,7 +47,8 @@ class LBOCalculator:
             ebt = ebit + interest
             taxes = -max(0, ebt * tax_rate)  # Negative for cash outflow
             net_income = ebt + taxes
-            free_cash_flow = net_income - capex  # Capex already negative
+            # For free cash flow, we don't need to subtract capex again as it's already included in net income
+            free_cash_flow = net_income   # Net income already includes interest, taxes, and capex
             
             data[year] = {
                 'EBITDA': ebitda,
@@ -57,7 +58,13 @@ class LBOCalculator:
                 'EBT': ebt,
                 'Less: Taxes': taxes,
                 'Net Income': net_income,
-                'Free Cash Flow': free_cash_flow
+                'EBITDA': ebitda,
+            'Less: Interest': interest,
+            'Less: Capex': capex,
+            'EBIT': ebit,
+            'Less: Taxes': taxes,
+            'Net Income': net_income,
+            'Free Cash Flow (after Interest)': free_cash_flow  # Renamed to be more explicit
             }
         
         return pd.DataFrame(data).transpose()
