@@ -27,7 +27,7 @@ class LBOCalculator:
                 cash_flows.append(0)
                 continue
                 
-            interest = debt_schedule.loc[year, 'interest_payment']
+            interest = debt_schedule['Interest Payment'][f'Year {year}']
             ebit = ebitda - capex
             taxes = max(0, (ebit - interest) * tax_rate)
             available_cash_flow = ebit - taxes - interest
@@ -51,7 +51,7 @@ class LBOCalculator:
         schedule['EBIT'] = [ebitda + capex for ebitda, capex in zip(schedule['EBITDA'], schedule['Less: Capex'])]
         
         # Less: Interest
-        schedule['Less: Interest'] = debt_schedule['interest_payment'].tolist()
+        schedule['Less: Interest'] = [-debt_schedule['Interest Payment'][f'Year {i}'] for i in range(self.years + 1)]
         
         # EBT
         schedule['EBT'] = [ebit - interest for ebit, interest in zip(schedule['EBIT'], schedule['Less: Interest'])]
@@ -167,10 +167,11 @@ def main():
         ebitda_schedule = calculator.calculate_ebitda_schedule(entry_ebitda, ebitda_cagr)
         
         # Create initial debt schedule for first cash flow calculation
-        initial_debt_df = pd.DataFrame(
-            {'interest_payment': [0.0] * (calculator.years + 1)},
-            index=range(calculator.years + 1)
-        )
+                    # Create initial debt schedule for first cash flow calculation
+            initial_debt_df = pd.DataFrame(
+                {f'Year {i}': [0.0] for i in range(calculator.years + 1)},
+                index=['Beginning Debt', 'Interest Payment', 'Debt Paydown', 'Ending Debt']
+            )
         
         # Calculate initial cash flows
         initial_cash_flows = calculator.calculate_cash_flows(
@@ -198,7 +199,7 @@ def main():
         # Calculate cash schedule
         cash_schedule = calculator.calculate_cash_schedule(
             financial_schedule['Free Cash Flow'].values,
-            debt_schedule.loc['Debt Paydown']
+            [debt_schedule['Debt Paydown'][f'Year {i}'] for i in range(self.years + 1)]
         )
         
         # Calculate exit values
