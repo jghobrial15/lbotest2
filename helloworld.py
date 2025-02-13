@@ -55,7 +55,11 @@ tax_rate = float(st.number_input("Tax Rate (%)", value=25.0)) / 100
 interest_rate = float(st.number_input("Interest Rate (%)", value=8.0)) / 100
 capex_percent = float(st.number_input("Capex as % of EBITDA", value=5.0)) / 100
 
-if st.button("Calculate IRR"): 
+ebitda_growth = [(1 + ebitda_cagr) ** i for i in range(6)]
+ebitda_projection = np.array(ebitda_growth) * entry_ebitda
+exit_tev = exit_multiple * ebitda_projection[-1]
+
+if st.button("Calculate IRR"):  
     irr = calculate_lbo_irr(
         entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, entry_debt, tax_rate, interest_rate, capex_percent
