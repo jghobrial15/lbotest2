@@ -13,8 +13,7 @@ def calculate_lbo_irr(
     entry_debt,
     tax_rate,
     years=5,
-    interest_rate=0.05,
-    debt_paydown=0.1
+    interest_rate=0.05
 ):
     revenue_growth = [(1 + revenue_cagr) ** i for i in range(years + 1)]
     ebitda_growth = [(1 + ebitda_cagr) ** i for i in range(years + 1)]
@@ -31,26 +30,26 @@ def calculate_lbo_irr(
     
     for year in range(1, years + 1):
         interest_payment = debt_balance * interest_rate
-        debt_repayment = debt_balance * debt_paydown
-        debt_balance -= debt_repayment
         ebitda = ebitda_projection[year]
         taxes = (ebitda - interest_payment) * tax_rate
         free_cash_flow = ebitda - interest_payment - taxes
-        cash_available_to_equity = free_cash_flow - debt_repayment
         
-        debt_schedule.append((year, debt_balance, interest_payment, debt_repayment, free_cash_flow, cash_available_to_equity))
-        cash_flows.append(cash_available_to_equity)
+        # Assume 100% of available cash is used to pay down debt
+        debt_repayment = min(free_cash_flow, debt_balance)
+        debt_balance -= debt_repayment
+        cash_flows.append(free_cash_flow - debt_repayment)  # Only leftover cash goes to equity
+        
+        debt_schedule.append((year, debt_balance, interest_payment, debt_repayment, free_cash_flow))
     
-    debt_repaid = entry_debt - debt_balance
     equity_value_at_exit = exit_tev - debt_balance
-    cash_flows.append(equity_value_at_exit)
+    cash_flows[-1] += equity_value_at_exit  # Add equity exit value in year 5
     
     if all(c <= 0 for c in cash_flows):
         irr = None  # Avoid calculation error
     else:
         irr = npf.irr(cash_flows)
     
-    return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment", "Free Cash Flow", "Cash Available to Equity"]), cash_flows
+    return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment", "Free Cash Flow"]), cash_flows
 
 st.title("LBO Model Calculator")
 
