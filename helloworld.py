@@ -42,7 +42,7 @@ def calculate_lbo_irr(
         cash_flows.append(free_cash_flow)
     
     cash_flows.append(exit_tev - debt_balance + cash_balance)
-    return npf.irr(cash_flows) if any(cash_flows) else None, cash_flows, ebitda_projection, exit_tev
+    return npf.irr(cash_flows) if any(cash_flows) else None, cash_flows, ebitda_projection, exit_tev, debt_balance, cash_balance, entry_equity
 
 st.title("LBO Model Calculator")
 
@@ -56,12 +56,12 @@ interest_rate = float(st.number_input("Interest Rate (%)", value=8.0)) / 100
 capex_percent = float(st.number_input("Capex as % of EBITDA", value=5.0)) / 100
 
 if st.button("Calculate IRR"): 
-    irr, cash_flows, ebitda_projection, exit_tev = calculate_lbo_irr(
+    irr, cash_flows, ebitda_projection, exit_tev, debt_balance, cash_balance, entry_equity = calculate_lbo_irr(
         entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, entry_debt, tax_rate, interest_rate, capex_percent
     )
     
-    unlevered_irr, _, _, _ = calculate_lbo_irr(
+    unlevered_irr, _, _, _, _, _, _ = calculate_lbo_irr(
         entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, 0, tax_rate, interest_rate, capex_percent
     )
@@ -80,6 +80,34 @@ if st.button("Calculate IRR"):
     
     st.write("### IRR Decomposition")
     st.dataframe(irr_decomposition)
+    
+    st.write("### Financial Metrics")
+    financial_metrics = pd.DataFrame({
+        "Metric": ["Entry EBITDA", "Exit EBITDA", "Entry TEV", "Exit TEV"],
+        "Value ($M)": [entry_ebitda, ebitda_projection[-1], entry_tev, exit_tev]
+    })
+    st.dataframe(financial_metrics)
+    
+    st.write("### Debt Schedule")
+    debt_schedule = pd.DataFrame({
+        "Metric": ["Entry Debt", "Exit Debt"],
+        "Value ($M)": [entry_debt, debt_balance]
+    })
+    st.dataframe(debt_schedule)
+    
+    st.write("### Cash Schedule")
+    cash_schedule = pd.DataFrame({
+        "Metric": ["Entry Cash", "Exit Cash"],
+        "Value ($M)": [0, cash_balance]
+    })
+    st.dataframe(cash_schedule)
+    
+    st.write("### Entry & Exit Equity Build")
+    equity_build = pd.DataFrame({
+        "Metric": ["Entry Equity", "Exit Equity"],
+        "Value ($M)": [entry_equity, exit_tev - debt_balance + cash_balance]
+    })
+    st.dataframe(equity_build)
     
     st.write("**Debugging:**")
     st.write("Cash Flows Debug:", cash_flows)
