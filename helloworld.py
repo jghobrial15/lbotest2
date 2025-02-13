@@ -34,9 +34,6 @@ def compute_irr(entry_ebitda, ebitda_cagr, entry_tev, exit_multiple, entry_debt,
     cash_flows.append(exit_tev - debt_balance + cash_balance)
     return npf.irr(cash_flows) if any(cash_flows) else None
 
-def calculate_irr(cash_flows):
-    return npf.irr(cash_flows) if any(cash_flows) else None
-
 def calculate_lbo_irr(
     entry_ebitda,
     ebitda_cagr,
