@@ -33,7 +33,9 @@ def calculate_lbo_irr(
     for year in range(1, years + 1):
         interest_payment = round(debt_balance * interest_rate, 1)
         ebitda = round(ebitda_projection[year], 1)
-        taxes = round((ebitda - interest_payment) * tax_rate, 1)
+        depreciation = capex
+        taxable_income = ebitda - depreciation - interest_payment
+        taxes = round(taxable_income * tax_rate, 1)
         capex = round(ebitda * capex_percent, 1)
         free_cash_flow = round(ebitda - capex - interest_payment - taxes, 1)
         
@@ -89,12 +91,12 @@ def calculate_lbo_irr(
     else:
         irr = npf.irr(cash_flows)
     
-    return equity_value_at_exit, irr, pd.DataFrame(financials).set_index("Metric"), pd.DataFrame(debt_schedule).set_index("Metric"), pd.DataFrame(cash_schedule).set_index("Metric"), equity_build, cash_flows
+    return equity_value_at_exit, irr, pd.DataFrame(financials).set_index("Metric"), pd.DataFrame(debt_schedule).set_index("Metric"), pd.DataFrame(cash_schedule).set_index("Metric"), equity_build, multiples_grid, cash_flows
 
 st.title("LBO Model Calculator")
 
 entry_ebitda = float(st.number_input("Entry EBITDA ($M)", value=100.0))
-ebitda_cagr = float(st.number_input("EBITDA CAGR (%)", value=6.0)) / 100
+ebitda_cagr = float(st.number_input("EBITDA CAGR (%)", value=11.0)) / 100
 entry_tev = float(st.number_input("Entry TEV ($M)", value=2000.0))
 exit_multiple = float(st.number_input("Exit Multiple", value=19.0))
 entry_debt = float(st.number_input("Entry Debt ($M)", value=800.0))
