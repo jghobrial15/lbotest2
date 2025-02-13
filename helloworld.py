@@ -3,6 +3,37 @@ import numpy as np
 import pandas as pd
 import numpy_financial as npf
 
+def compute_irr(entry_ebitda, ebitda_cagr, entry_tev, exit_multiple, entry_debt, tax_rate, interest_rate, capex_percent, years=5):
+    ebitda_growth = [(1 + ebitda_cagr) ** i for i in range(years + 1)]
+    ebitda_projection = np.array(ebitda_growth) * entry_ebitda
+    
+    exit_ebitda = ebitda_projection[-1]
+    exit_tev = exit_ebitda * exit_multiple
+    
+    debt_balance = entry_debt
+    cash_balance = 0.0
+    entry_equity = round(entry_tev - entry_debt, 1)
+    cash_flows = [-entry_equity]
+    
+    for year in range(1, years + 1):
+        interest_payment = round(debt_balance * interest_rate, 1)
+        ebitda = round(ebitda_projection[year], 1)
+        capex = round(ebitda * capex_percent, 1)
+        depreciation = capex
+        taxable_income = ebitda - depreciation - interest_payment
+        taxes = round(taxable_income * tax_rate, 1)
+        free_cash_flow = round(ebitda - capex - interest_payment - taxes, 1)
+        
+        debt_repayment = round(min(free_cash_flow, debt_balance), 1)
+        debt_balance = round(debt_balance - debt_repayment, 1)
+        remaining_cash = round(free_cash_flow - debt_repayment, 1)
+        cash_balance = round(cash_balance + remaining_cash, 1)
+        
+        cash_flows.append(free_cash_flow)
+    
+    cash_flows.append(exit_tev - debt_balance + cash_balance)
+    return npf.irr(cash_flows) if any(cash_flows) else None
+
 def calculate_irr(cash_flows):
     return npf.irr(cash_flows) if any(cash_flows) else None
 
