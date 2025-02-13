@@ -42,7 +42,7 @@ def calculate_lbo_irr(
         cash_flows.append(free_cash_flow)
     
     cash_flows.append(exit_tev - debt_balance + cash_balance)
-    return npf.irr(cash_flows) if any(cash_flows) else None
+    return npf.irr(cash_flows) if any(cash_flows) else None, cash_flows, ebitda_projection, exit_tev
 
 st.title("LBO Model Calculator")
 
@@ -55,24 +55,19 @@ tax_rate = float(st.number_input("Tax Rate (%)", value=25.0)) / 100
 interest_rate = float(st.number_input("Interest Rate (%)", value=8.0)) / 100
 capex_percent = float(st.number_input("Capex as % of EBITDA", value=5.0)) / 100
 
-ebitda_growth = [(1 + ebitda_cagr) ** i for i in range(6)]
-ebitda_projection = np.array(ebitda_growth) * entry_ebitda
-exit_tev = exit_multiple * ebitda_projection[-1]
-
-if st.button("Calculate IRR"):  
-    irr = calculate_lbo_irr(
+if st.button("Calculate IRR"): 
+    irr, cash_flows, ebitda_projection, exit_tev = calculate_lbo_irr(
         entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, entry_debt, tax_rate, interest_rate, capex_percent
     )
     
-    unlevered_irr = calculate_lbo_irr(
+    unlevered_irr, _, _, _ = calculate_lbo_irr(
         entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, 0, tax_rate, interest_rate, capex_percent
     )
     
-    years = 5  # Define years explicitly
+    years = 5
     annualized_exit_multiple_change = ((exit_multiple / (entry_tev / entry_ebitda)) ** (1 / years)) - 1
-    exit_tev = exit_multiple * ebitda_projection[-1]
     tev_growth = ((exit_tev / entry_tev) ** (1 / years)) - 1
     yield_rate = 1 / (entry_tev / entry_ebitda)
     covariance = unlevered_irr - (tev_growth + yield_rate)
