@@ -11,7 +11,7 @@ def calculate_lbo_irr(
     entry_debt,
     tax_rate,
     years=5,
-    interest_rate=0.05
+    interest_rate
 ):
     ebitda_growth = [(1 + ebitda_cagr) ** i for i in range(years + 1)]
     ebitda_projection = np.array(ebitda_growth) * entry_ebitda
@@ -87,6 +87,7 @@ entry_tev = float(st.number_input("Entry TEV ($M)", value=2000))
 exit_multiple = float(st.number_input("Exit Multiple", value=19))
 entry_debt = float(st.number_input("Entry Debt ($M)", value=800))
 tax_rate = float(st.number_input("Tax Rate (%)", value=25.0)) / 100
+interest_rate = float(st.number_input("Tax Rate (%)", value=8)) / 100
 
 if st.button("Calculate IRR"):
     equity_value_at_exit, irr, financials, debt_schedule, cash_schedule, equity_build, cash_flows = calculate_lbo_irr(
