@@ -26,7 +26,8 @@ def calculate_lbo_irr(
     
     debt_balance = entry_debt
     cash_balance = 0.0
-    cash_flows = [-entry_equity]
+    entry_equity = round(entry_tev - entry_debt, 1)
+cash_flows = [-entry_equity]
     
     financials = {"Metric": ["EBITDA", "Interest Expense", "Taxes", "Cash Flow"]}
     debt_schedule = {"Metric": ["Starting Debt", "Debt Paydown", "Ending Debt"]}
