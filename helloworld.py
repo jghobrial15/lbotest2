@@ -10,8 +10,8 @@ def calculate_lbo_irr(
     exit_multiple,
     entry_debt,
     tax_rate,
-    years=5,
-    interest_rate
+    interest_rate,
+    years=5
 ):
     ebitda_growth = [(1 + ebitda_cagr) ** i for i in range(years + 1)]
     ebitda_projection = np.array(ebitda_growth) * entry_ebitda
