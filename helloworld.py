@@ -52,7 +52,8 @@ def calculate_lbo_irr(
         cash_schedule[year] = [cash_balance - remaining_cash, remaining_cash, cash_balance]
     
     equity_value_at_exit = round(exit_tev - debt_balance + cash_balance, 1)
-    cash_flows.append(equity_value_at_exit)  # Replace last year cash flow with equity exit value only
+    cash_flows.append(0) * (years - 1)
+cash_flows.append(equity_value_at_exit)  # Replace last year cash flow with equity exit value only
     
     entry_equity = round(entry_tev - entry_debt + 0.0, 1)  # Include initial cash
     exit_equity = round(exit_tev - debt_balance + cash_balance, 1)
