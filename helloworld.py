@@ -68,6 +68,7 @@ if st.button("Calculate IRR"):
     
     years = 5  # Define years explicitly
     annualized_exit_multiple_change = ((exit_multiple / (entry_tev / entry_ebitda)) ** (1 / years)) - 1
+    exit_tev = exit_multiple * ebitda_projection[-1]
     tev_growth = ((exit_tev / entry_tev) ** (1 / years)) - 1
     yield_rate = 1 / (entry_tev / entry_ebitda)
     covariance = unlevered_irr - (tev_growth + yield_rate)
