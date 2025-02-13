@@ -124,7 +124,7 @@ def calculate_lbo_irr(
     
     irr = npf.irr(cash_flows) if any(cash_flows) else None
     
-    unlevered_irr = calculate_lbo_irr(
+    unlevered_irr = compute_irr(
         entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, 0, tax_rate, interest_rate, capex_percent
     )[1]
