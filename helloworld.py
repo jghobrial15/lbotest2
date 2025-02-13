@@ -6,6 +6,35 @@ import numpy_financial as npf
 class LBOCalculator:
     def __init__(self):
         self.years = 5  # Fixed 5-year projection period
+
+    def calculate_ebitda_schedule(self, entry_ebitda, ebitda_cagr):
+        """Calculate EBITDA schedule based on growth rate."""
+        ebitda_schedule = []
+        for year in range(self.years + 1):
+            ebitda = entry_ebitda * (1 + ebitda_cagr) ** year
+            ebitda_schedule.append(ebitda)
+        return ebitda_schedule
+
+    def calculate_cash_flows(self, ebitda_schedule, debt_schedule, tax_rate, capex_pct):
+        """Calculate available cash flows after interest, taxes, and capex."""
+        cash_flows = []
+        
+        for year in range(self.years + 1):
+            ebitda = ebitda_schedule[year]
+            capex = ebitda * capex_pct
+            
+            if year == 0:
+                cash_flows.append(0)
+                continue
+                
+            interest = debt_schedule.loc[year, 'interest_payment']
+            ebit = ebitda - capex
+            taxes = max(0, (ebit - interest) * tax_rate)
+            available_cash_flow = ebit - taxes - interest
+            
+            cash_flows.append(available_cash_flow)
+            
+        return cash_flows
         
     def calculate_financial_schedule(self, ebitda_schedule, debt_schedule, tax_rate, capex_pct):
         """Calculate full financial schedule with all metrics."""
@@ -178,7 +207,7 @@ def main():
         
         # Calculate equity values and IRRs
         entry_equity = entry_tev - entry_debt
-        exit_equity = exit_tev - debt_schedule['Year 5']['Ending Debt']
+        exit_equity = exit_tev - debt_schedule.iloc[-1]['Ending Debt']
         
         cash_flows = financial_schedule['Free Cash Flow'].values
         levered_irr = calculator.calculate_irr(entry_equity, exit_equity, cash_flows)
