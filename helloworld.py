@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import numpy_financial as npf
 
 def calculate_lbo_irr(
     entry_revenue,
@@ -42,20 +43,24 @@ def calculate_lbo_irr(
         cash_flows.append(tax_shield)
     
     cash_flows.append(equity_value_at_exit)
-    irr = np.irr(cash_flows)
+    
+    if all(c <= 0 for c in cash_flows):
+        irr = None  # Avoid calculation error
+    else:
+        irr = npf.irr(cash_flows)
     
     return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment"])
 
 st.title("LBO Model Calculator")
 
-entry_revenue = st.number_input("Entry Revenue ($M)", value=100.0)
-entry_ebitda = st.number_input("Entry EBITDA ($M)", value=20.0)
-revenue_cagr = st.number_input("Revenue CAGR (%)", value=5.0) / 100
-ebitda_cagr = st.number_input("EBITDA CAGR (%)", value=6.0) / 100
-entry_tev = st.number_input("Entry TEV ($M)", value=150.0)
-exit_multiple = st.number_input("Exit Multiple", value=8.0)
-entry_debt = st.number_input("Entry Debt ($M)", value=90.0)
-tax_rate = st.number_input("Tax Rate (%)", value=25.0) / 100
+entry_revenue = float(st.number_input("Entry Revenue ($M)", value=100.0))
+entry_ebitda = float(st.number_input("Entry EBITDA ($M)", value=20.0))
+revenue_cagr = float(st.number_input("Revenue CAGR (%)", value=5.0)) / 100
+ebitda_cagr = float(st.number_input("EBITDA CAGR (%)", value=6.0)) / 100
+entry_tev = float(st.number_input("Entry TEV ($M)", value=150.0))
+exit_multiple = float(st.number_input("Exit Multiple", value=8.0))
+entry_debt = float(st.number_input("Entry Debt ($M)", value=90.0))
+tax_rate = float(st.number_input("Tax Rate (%)", value=25.0)) / 100
 
 if st.button("Calculate IRR"):
     equity_value_at_exit, irr, debt_schedule = calculate_lbo_irr(
@@ -64,6 +69,13 @@ if st.button("Calculate IRR"):
     )
     
     st.write(f"**Equity Value at Exit:** ${equity_value_at_exit:.2f}M")
-    st.write(f"**IRR:** {irr:.2%}")
+    if irr is not None:
+        st.write(f"**IRR:** {irr:.2%}")
+    else:
+        st.write("**IRR Calculation Error: Check inputs**")
+    
     st.write("### Debt Schedule")
     st.dataframe(debt_schedule)
+    
+    st.write("**Debugging:**")
+    st.write("Cash Flows Debug:", cash_flows)
