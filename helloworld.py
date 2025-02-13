@@ -27,21 +27,21 @@ def calculate_lbo_irr(
     
     debt_balance = entry_debt
     debt_schedule = []
+    cash_flows = [- (entry_tev - entry_debt)]
     
     for year in range(1, years + 1):
         interest_payment = debt_balance * interest_rate
         debt_repayment = debt_balance * debt_paydown
         debt_balance -= debt_repayment
-        debt_schedule.append((year, debt_balance, interest_payment, debt_repayment))
+        ebitda = ebitda_projection[year]
+        taxes = (ebitda - interest_payment) * tax_rate
+        free_cash_flow = ebitda - interest_payment - taxes
+        
+        debt_schedule.append((year, debt_balance, interest_payment, debt_repayment, free_cash_flow))
+        cash_flows.append(free_cash_flow)
     
     debt_repaid = entry_debt - debt_balance
     equity_value_at_exit = exit_tev - debt_balance
-    
-    cash_flows = [- (entry_tev - entry_debt)]
-    for year in range(1, years + 1):
-        tax_shield = debt_schedule[year - 1][2] * tax_rate
-        cash_flows.append(tax_shield)
-    
     cash_flows.append(equity_value_at_exit)
     
     if all(c <= 0 for c in cash_flows):
@@ -49,7 +49,7 @@ def calculate_lbo_irr(
     else:
         irr = npf.irr(cash_flows)
     
-    return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment"]), cash_flows
+    return equity_value_at_exit, irr, pd.DataFrame(debt_schedule, columns=["Year", "Debt Balance", "Interest Payment", "Debt Repayment", "Free Cash Flow"]), cash_flows
 
 st.title("LBO Model Calculator")
 
