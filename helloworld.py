@@ -94,9 +94,15 @@ def calculate_lbo_irr(
         irr = npf.irr(cash_flows)
     
     unlevered_cash_flows = [-entry_tev]
-    unlevered_debt_balance = 0.0  # No leverage scenario
     for year in range(1, years + 1):
-            unlevered_cash_flows.append(financials[year][-1] + unlevered_debt_balance)
+        unlevered_ebitda = ebitda_projection[year]
+        unlevered_capex = round(unlevered_ebitda * capex_percent, 1)
+        unlevered_depreciation = unlevered_capex
+        unlevered_taxable_income = unlevered_ebitda - unlevered_depreciation
+        unlevered_taxes = round(unlevered_taxable_income * tax_rate, 1)
+        unlevered_free_cash_flow = round(unlevered_ebitda - unlevered_capex - unlevered_taxes, 1)
+        unlevered_cash_flows.append(unlevered_free_cash_flow)
+    unlevered_cash_flows[-1] += exit_tev
     unlevered_cash_flows[-1] += exit_tev
     unlevered_irr = npf.irr(unlevered_cash_flows)
     
