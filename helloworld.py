@@ -261,6 +261,24 @@ def main():
         st.write(f"Levered IRR: {levered_irr:.1%}")
         st.write(f"Unlevered IRR: {unlevered_irr:.1%}")
         
+        # Debug: Show IRR Cash Flows
+        st.subheader("IRR Cash Flow Details")
+        irr_flows = [-entry_equity] + cash_flows[1:-1].tolist() + [exit_equity]
+        irr_flows_df = pd.DataFrame({
+            'Time': ['Entry'] + [f'Year {i}' for i in range(1, calculator.years)] + ['Exit'],
+            'Cash Flow ($M)': irr_flows
+        })
+        st.write("Cash flows used for Levered IRR calculation:")
+        st.dataframe(irr_flows_df.round(1))
+        
+        unlevered_irr_flows = [-unlevered_entry_equity] + unlevered_cash_flows[1:-1] + [unlevered_exit_equity]
+        unlevered_irr_flows_df = pd.DataFrame({
+            'Time': ['Entry'] + [f'Year {i}' for i in range(1, calculator.years)] + ['Exit'],
+            'Cash Flow ($M)': unlevered_irr_flows
+        })
+        st.write("Cash flows used for Unlevered IRR calculation:")
+        st.dataframe(unlevered_irr_flows_df.round(1))
+        
         # IRR Decomposition
         st.subheader("IRR Decomposition")
         decomposition = calculator.calculate_irr_decomposition(
