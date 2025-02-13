@@ -1,7 +1,13 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import numpy_financial as npf
+
+try:
+    import numpy_financial as npf
+except ImportError:
+    import numpy as np
+    npf = np
+
 
 def calculate_lbo_irr(
     entry_revenue,
