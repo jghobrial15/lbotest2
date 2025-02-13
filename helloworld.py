@@ -88,6 +88,11 @@ def calculate_lbo_irr(
         "Exit": [round(exit_ebitda, 1), round(exit_tev / exit_ebitda, 1), round(ebitda_projection[-1], 1), round(exit_tev / ebitda_projection[-1], 1), round(exit_unlevered_net_income, 1), round(exit_tev / exit_unlevered_net_income, 1)]
     })
     
+    if all(c <= 0 for c in cash_flows):
+        irr = None  # Avoid calculation error
+    else:
+        irr = npf.irr(cash_flows)
+    
     unlevered_cash_flows = [-entry_tev]
     for year in range(1, years + 1):
         unlevered_cash_flows.append(financials[year][-1])
