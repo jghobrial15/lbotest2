@@ -98,7 +98,7 @@ def calculate_lbo_irr(
     tev_growth = ((exit_tev / entry_tev) ** (1 / years)) - 1
     yield_rate = 1 / ebitda_projection[1]
     covariance = unlevered_irr - (tev_growth + yield_rate)
-    leverage_impact = irr - unlevered_irr
+    leverage_impact = (irr if irr is not None else 0) - unlevered_irr
     
     irr_decomposition = pd.DataFrame({
         "Metric": ["EBITDA Growth", "Exit Multiple Change", "TEV Growth", "Yield", "Covariance", "Unlevered IRR", "Leverage Impact", "Levered IRR"],
@@ -106,6 +106,10 @@ def calculate_lbo_irr(
     })
     
     if all(c <= 0 for c in cash_flows):
+        irr = None  # Avoid calculation error
+    else:
+        irr = npf.irr(cash_flows)
+    
         irr = None  # Avoid calculation error
     else:
         irr = npf.irr(cash_flows)
