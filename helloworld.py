@@ -38,22 +38,20 @@ def calculate_lbo_irr(
         taxes = round((ebitda - interest_payment) * tax_rate, 1)
         free_cash_flow = round(ebitda - interest_payment - taxes, 1)
         
-        # Assume 100% of available cash is used to pay down debt until fully repaid
+        # Use 100% of free cash flow to pay down debt until fully repaid
         debt_repayment = round(min(free_cash_flow, debt_balance), 1)
         debt_balance = round(debt_balance - debt_repayment, 1)
         remaining_cash = round(free_cash_flow - debt_repayment, 1)
         
-        if debt_balance == 0:
-            cash_balance = round(cash_balance + remaining_cash, 1)
-        
-        cash_flows.append(remaining_cash)
+        # Retain remaining cash instead of distributing it to equity holders
+        cash_balance = round(cash_balance + remaining_cash, 1)
         
         financials[year] = [ebitda, interest_payment, taxes, free_cash_flow]
         debt_schedule[year] = [debt_balance + debt_repayment, debt_repayment, debt_balance]
         cash_schedule[year] = [cash_balance - remaining_cash, remaining_cash, cash_balance]
     
     equity_value_at_exit = round(exit_tev - debt_balance + cash_balance, 1)
-    cash_flows[-1] += equity_value_at_exit  # Add equity exit value in year 5
+    cash_flows[-1] = equity_value_at_exit  # Replace last year cash flow with equity exit value only
     
     entry_equity = round(entry_tev - entry_debt + 0.0, 1)  # Include initial cash
     exit_equity = round(exit_tev - debt_balance + cash_balance, 1)
