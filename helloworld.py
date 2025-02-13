@@ -241,6 +241,31 @@ def main():
             unlevered_cash_flows
         )
         
+        # Exit value calculation debug
+        st.subheader("Exit Value Bridge")
+        st.write("Step 1: EBITDA Growth")
+        st.write(f"Entry EBITDA: ${entry_ebitda:.1f}M")
+        st.write(f"EBITDA CAGR: {ebitda_cagr:.1%}")
+        st.write(f"Exit EBITDA: ${exit_ebitda:.1f}M")
+        
+        st.write("\nStep 2: Exit TEV Calculation")
+        st.write(f"Exit Multiple: {exit_multiple:.1f}x")
+        st.write(f"Exit TEV = Exit EBITDA × Exit Multiple")
+        st.write(f"Exit TEV = ${exit_ebitda:.1f}M × {exit_multiple:.1f}x = ${exit_tev:.1f}M")
+        
+        st.write("\nStep 3: Exit Equity Calculation")
+        exit_debt = debt_schedule.loc['Ending Debt', 'Year 5']
+        st.write(f"Exit Debt (Year 5 Ending Debt): ${exit_debt:.1f}M")
+        st.write(f"Exit Equity = Exit TEV - Exit Debt")
+        st.write(f"Exit Equity = ${exit_tev:.1f}M - ${exit_debt:.1f}M = ${exit_equity:.1f}M")
+        
+        # Equity returns summary
+        st.write("\nEquity Returns Summary:")
+        st.write(f"Entry Equity: ${entry_equity:.1f}M")
+        st.write(f"Exit Equity: ${exit_equity:.1f}M")
+        total_return = (exit_equity / entry_equity - 1) * 100
+        st.write(f"Total Return: {total_return:.1f}%")
+        
         # Display Results
         st.header("Results")
         
