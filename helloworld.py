@@ -28,31 +28,23 @@ def calculate_lbo_irr(
     cash_balance = 0.0
     cash_flows = [- (entry_tev - entry_debt)]
     
-    financials = {
-        "Metric": ["EBITDA", "Interest Expense", "Taxes", "Cash Flow"],
-    }
-    
-    debt_schedule = {
-        "Metric": ["Starting Debt", "Debt Paydown", "Ending Debt"],
-    }
-    
-    cash_schedule = {
-        "Metric": ["Starting Cash", "Cash Generated", "Ending Cash"],
-    }
+    financials = {"Metric": ["EBITDA", "Interest Expense", "Taxes", "Cash Flow"]}
+    debt_schedule = {"Metric": ["Starting Debt", "Debt Paydown", "Ending Debt"]}
+    cash_schedule = {"Metric": ["Starting Cash", "Cash Generated", "Ending Cash"]}
     
     for year in range(1, years + 1):
-        interest_payment = debt_balance * interest_rate
-        ebitda = ebitda_projection[year]
-        taxes = (ebitda - interest_payment) * tax_rate
-        free_cash_flow = ebitda - interest_payment - taxes
+        interest_payment = round(debt_balance * interest_rate, 1)
+        ebitda = round(ebitda_projection[year], 1)
+        taxes = round((ebitda - interest_payment) * tax_rate, 1)
+        free_cash_flow = round(ebitda - interest_payment - taxes, 1)
         
         # Assume 100% of available cash is used to pay down debt until fully repaid
-        debt_repayment = min(free_cash_flow, debt_balance)
-        debt_balance -= debt_repayment
-        remaining_cash = free_cash_flow - debt_repayment
+        debt_repayment = round(min(free_cash_flow, debt_balance), 1)
+        debt_balance = round(debt_balance - debt_repayment, 1)
+        remaining_cash = round(free_cash_flow - debt_repayment, 1)
         
         if debt_balance == 0:
-            cash_balance += remaining_cash
+            cash_balance = round(cash_balance + remaining_cash, 1)
         
         cash_flows.append(remaining_cash)
         
@@ -60,15 +52,30 @@ def calculate_lbo_irr(
         debt_schedule[year] = [debt_balance + debt_repayment, debt_repayment, debt_balance]
         cash_schedule[year] = [cash_balance - remaining_cash, remaining_cash, cash_balance]
     
-    equity_value_at_exit = exit_tev - debt_balance
+    equity_value_at_exit = round(exit_tev - debt_balance + cash_balance, 1)
     cash_flows[-1] += equity_value_at_exit  # Add equity exit value in year 5
     
-    entry_equity = entry_tev - entry_debt
-    exit_equity = exit_tev - debt_balance
+    entry_equity = round(entry_tev - entry_debt + 0.0, 1)  # Include initial cash
+    exit_equity = round(exit_tev - debt_balance + cash_balance, 1)
+    
     equity_build = pd.DataFrame({
-        "Metric": ["EBITDA", "Multiple", "TEV", "Debt", "Equity"],
-        "Entry": [entry_ebitda, entry_tev / entry_ebitda, entry_tev, entry_debt, entry_equity],
-        "Exit": [exit_ebitda, exit_multiple, exit_tev, debt_balance, exit_equity]
+        "Metric": ["EBITDA", "Multiple", "TEV", "Debt", "Cash", "Equity"],
+        "Entry": [
+            round(entry_ebitda, 1), 
+            round(entry_tev / entry_ebitda, 1), 
+            round(entry_tev, 1), 
+            round(entry_debt, 1),
+            round(0.0, 1),
+            entry_equity
+        ],
+        "Exit": [
+            round(exit_ebitda, 1), 
+            round(exit_multiple, 1), 
+            round(exit_tev, 1), 
+            round(debt_balance, 1),
+            round(cash_balance, 1),
+            exit_equity
+        ]
     })
     
     if all(c <= 0 for c in cash_flows):
@@ -95,9 +102,9 @@ if st.button("Calculate IRR"):
         exit_multiple, entry_debt, tax_rate
     )
     
-    st.write(f"**Equity Value at Exit:** ${equity_value_at_exit:.2f}M")
+    st.write(f"**Equity Value at Exit:** ${equity_value_at_exit:.1f}M")
     if irr is not None:
-        st.write(f"**IRR:** {irr:.2%}")
+        st.write(f"**IRR:** {irr:.1%}")
     else:
         st.write("**IRR Calculation Error: Check inputs**")
     
