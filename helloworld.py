@@ -265,6 +265,10 @@ def main():
         st.write("\nLevered IRR Calculation:")
         levered_irr = calculator.calculate_irr(entry_equity, exit_equity, cash_flows)
         
+        # Calculate unlevered values
+        unlevered_entry_equity = entry_tev  # For unlevered, entry equity equals TEV
+        unlevered_exit_equity = exit_tev    # For unlevered, exit equity equals TEV
+        
         st.write("\nUnlevered IRR Calculation:")
         unlevered_cash_flows = calculator.calculate_cash_flows(
             ebitda_schedule,
