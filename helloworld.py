@@ -110,10 +110,6 @@ def calculate_lbo_irr(
     else:
         irr = npf.irr(cash_flows)
     
-        irr = None  # Avoid calculation error
-    else:
-        irr = npf.irr(cash_flows)
-    
     return equity_value_at_exit, irr, pd.DataFrame(financials).set_index("Metric"), pd.DataFrame(debt_schedule).set_index("Metric"), pd.DataFrame(cash_schedule).set_index("Metric"), equity_build, multiples_grid, cash_flows
 
 st.title("LBO Model Calculator")
