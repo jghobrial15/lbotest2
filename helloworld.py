@@ -81,11 +81,11 @@ def calculate_lbo_irr(
 
 st.title("LBO Model Calculator")
 
-entry_ebitda = float(st.number_input("Entry EBITDA ($M)", value=20.0))
-ebitda_cagr = float(st.number_input("EBITDA CAGR (%)", value=6.0)) / 100
-entry_tev = float(st.number_input("Entry TEV ($M)", value=150.0))
-exit_multiple = float(st.number_input("Exit Multiple", value=8.0))
-entry_debt = float(st.number_input("Entry Debt ($M)", value=90.0))
+entry_ebitda = float(st.number_input("Entry EBITDA ($M)", value=100))
+ebitda_cagr = float(st.number_input("EBITDA CAGR (%)", value=11)) / 100
+entry_tev = float(st.number_input("Entry TEV ($M)", value=2000))
+exit_multiple = float(st.number_input("Exit Multiple", value=19))
+entry_debt = float(st.number_input("Entry Debt ($M)", value=500))
 tax_rate = float(st.number_input("Tax Rate (%)", value=25.0)) / 100
 
 if st.button("Calculate IRR"):
