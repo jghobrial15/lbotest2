@@ -29,22 +29,15 @@ def calculate_lbo_irr(
     cash_flows = [- (entry_tev - entry_debt)]
     
     financials = {
-        "EBITDA": [],
-        "Interest Expense": [],
-        "Taxes": [],
-        "Cash Flow": []
+        "Metric": ["EBITDA", "Interest Expense", "Taxes", "Cash Flow"],
     }
     
     debt_schedule = {
-        "Starting Debt": [],
-        "Debt Paydown": [],
-        "Ending Debt": []
+        "Metric": ["Starting Debt", "Debt Paydown", "Ending Debt"],
     }
     
     cash_schedule = {
-        "Starting Cash": [],
-        "Cash Generated": [],
-        "Ending Cash": []
+        "Metric": ["Starting Cash", "Cash Generated", "Ending Cash"],
     }
     
     for year in range(1, years + 1):
@@ -63,28 +56,27 @@ def calculate_lbo_irr(
         
         cash_flows.append(remaining_cash)
         
-        financials["EBITDA"].append(ebitda)
-        financials["Interest Expense"].append(interest_payment)
-        financials["Taxes"].append(taxes)
-        financials["Cash Flow"].append(free_cash_flow)
-        
-        debt_schedule["Starting Debt"].append(debt_balance + debt_repayment)
-        debt_schedule["Debt Paydown"].append(debt_repayment)
-        debt_schedule["Ending Debt"].append(debt_balance)
-        
-        cash_schedule["Starting Cash"].append(cash_balance - remaining_cash)
-        cash_schedule["Cash Generated"].append(remaining_cash)
-        cash_schedule["Ending Cash"].append(cash_balance)
+        financials[year] = [ebitda, interest_payment, taxes, free_cash_flow]
+        debt_schedule[year] = [debt_balance + debt_repayment, debt_repayment, debt_balance]
+        cash_schedule[year] = [cash_balance - remaining_cash, remaining_cash, cash_balance]
     
     equity_value_at_exit = exit_tev - debt_balance
     cash_flows[-1] += equity_value_at_exit  # Add equity exit value in year 5
+    
+    entry_equity = entry_tev - entry_debt
+    exit_equity = exit_tev - debt_balance
+    equity_build = pd.DataFrame({
+        "Metric": ["EBITDA", "Multiple", "TEV", "Debt", "Equity"],
+        "Entry": [entry_ebitda, entry_tev / entry_ebitda, entry_tev, entry_debt, entry_equity],
+        "Exit": [exit_ebitda, exit_multiple, exit_tev, debt_balance, exit_equity]
+    })
     
     if all(c <= 0 for c in cash_flows):
         irr = None  # Avoid calculation error
     else:
         irr = npf.irr(cash_flows)
     
-    return equity_value_at_exit, irr, pd.DataFrame(financials, index=range(1, years+1)), pd.DataFrame(debt_schedule, index=range(1, years+1)), pd.DataFrame(cash_schedule, index=range(1, years+1)), cash_flows
+    return equity_value_at_exit, irr, pd.DataFrame(financials).set_index("Metric"), pd.DataFrame(debt_schedule).set_index("Metric"), pd.DataFrame(cash_schedule).set_index("Metric"), equity_build, cash_flows
 
 st.title("LBO Model Calculator")
 
@@ -98,7 +90,7 @@ entry_debt = float(st.number_input("Entry Debt ($M)", value=90.0))
 tax_rate = float(st.number_input("Tax Rate (%)", value=25.0)) / 100
 
 if st.button("Calculate IRR"):
-    equity_value_at_exit, irr, financials, debt_schedule, cash_schedule, cash_flows = calculate_lbo_irr(
+    equity_value_at_exit, irr, financials, debt_schedule, cash_schedule, equity_build, cash_flows = calculate_lbo_irr(
         entry_revenue, entry_ebitda, revenue_cagr, ebitda_cagr, entry_tev,
         exit_multiple, entry_debt, tax_rate
     )
@@ -117,6 +109,9 @@ if st.button("Calculate IRR"):
     
     st.write("### Cash Schedule")
     st.dataframe(cash_schedule)
+    
+    st.write("### Entry & Exit Equity Build")
+    st.dataframe(equity_build)
     
     st.write("**Debugging:**")
     st.write("Cash Flows Debug:", cash_flows)
