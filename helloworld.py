@@ -65,80 +65,62 @@ class LBOCalculator:
     def calculate_debt_schedule(self, entry_debt, interest_rate, available_cash_flow):
         """Calculate debt schedule with years as columns."""
         years = [f"Year {i}" for i in range(self.years + 1)]
-        data = {}
+        df = pd.DataFrame(index=['Beginning Debt', 'Interest Payment', 'Debt Paydown', 'Ending Debt'])
         
+        # Initialize all years with zeros
         for year in years:
-            data[year] = {
-                'Beginning Debt': 0,
-                'Interest Payment': 0,
-                'Debt Paydown': 0,
-                'Ending Debt': 0
-            }
+            df[year] = 0.0
         
         # Set initial values for Year 0
-        data['Year 0']['Beginning Debt'] = entry_debt
-        data['Year 0']['Ending Debt'] = entry_debt
+        df.loc['Beginning Debt', 'Year 0'] = entry_debt
+        df.loc['Ending Debt', 'Year 0'] = entry_debt
         
         # Calculate subsequent years
         for i in range(1, self.years + 1):
-            year_col = f'Year {i}'
-            prev_year_col = f'Year {i-1}'
+            year = f'Year {i}'
+            prev_year = f'Year {i-1}'
             
-            beginning_debt = data[prev_year_col]['Ending Debt']
-            interest = beginning_debt * interest_rate
-            debt_paydown = min(available_cash_flow[i], beginning_debt)
-            ending_debt = beginning_debt - debt_paydown
-            
-            data[year_col]['Beginning Debt'] = beginning_debt
-            data[year_col]['Interest Payment'] = interest
-            data[year_col]['Debt Paydown'] = debt_paydown
-            data[year_col]['Ending Debt'] = ending_debt
+            df.loc['Beginning Debt', year] = df.loc['Ending Debt', prev_year]
+            df.loc['Interest Payment', year] = df.loc['Beginning Debt', year] * interest_rate
+            df.loc['Debt Paydown', year] = min(available_cash_flow[i], df.loc['Beginning Debt', year])
+            df.loc['Ending Debt', year] = df.loc['Beginning Debt', year] - df.loc['Debt Paydown', year]
         
-        df = pd.DataFrame(data)
         return df
     
     def calculate_cash_schedule(self, free_cash_flows, debt_paydown):
         """Calculate cash schedule with beginning cash, generation, and ending cash."""
         years = [f"Year {i}" for i in range(self.years + 1)]
-        data = {}
+        df = pd.DataFrame(index=['Beginning Cash', 'Cash Generation', 'Less: Debt Paydown', 'Ending Cash'])
         
+        # Initialize all years with zeros
         for year in years:
-            data[year] = {
-                'Beginning Cash': 0,
-                'Cash Generation': 0,
-                'Less: Debt Paydown': 0,
-                'Ending Cash': 0
-            }
+            df[year] = 0.0
         
         # Calculate values for each year
         for i, year in enumerate(years):
             if i > 0:
-                data[year]['Beginning Cash'] = data[years[i-1]]['Ending Cash']
+                df.loc['Beginning Cash', year] = df.loc['Ending Cash', years[i-1]]
             
-            data[year]['Cash Generation'] = free_cash_flows[year]
-            data[year]['Less: Debt Paydown'] = -debt_paydown[year]  # Negative for cash outflow
-            data[year]['Ending Cash'] = (data[year]['Beginning Cash'] + 
-                                       data[year]['Cash Generation'] + 
-                                       data[year]['Less: Debt Paydown'])
+            df.loc['Cash Generation', year] = free_cash_flows[i]
+            df.loc['Less: Debt Paydown', year] = -debt_paydown[i]  # Negative for cash outflow
+            df.loc['Ending Cash', year] = (df.loc['Beginning Cash', year] + 
+                                         df.loc['Cash Generation', year] + 
+                                         df.loc['Less: Debt Paydown', year])
         
-        df = pd.DataFrame(data)
         return df
     
     def calculate_irr(self, entry_equity, exit_equity, cash_flows):
         """Calculate IRR based on equity flows."""
-        flows = [-entry_equity] + cash_flows[1:-1].tolist() + [exit_equity]
+        if isinstance(cash_flows, np.ndarray):
+            cash_flows = cash_flows.tolist()
+        
+        flows = [-entry_equity] + cash_flows[1:-1] + [exit_equity]
         
         st.write("IRR Calculation Components:")
         st.write(f"Entry Equity: ${entry_equity:.1f}M")
         st.write(f"Intermediate Cash Flows: {[f'${x:.1f}M' for x in cash_flows[1:-1]]}")
         st.write(f"Exit Equity: ${exit_equity:.1f}M")
         st.write(f"Complete Flow Series: {[f'${x:.1f}M' for x in flows]}")
-        
-        # Check for valid IRR calculation conditions
-        if not any(f < 0 for f in flows):
-            st.write("Warning: No negative cash flows found - IRR calculation may fail")
-        if not any(f > 0 for f in flows):
-            st.write("Warning: No positive cash flows found - IRR calculation may fail")
         
         try:
             irr = npf.irr(flows)
@@ -200,8 +182,9 @@ def main():
         # Create initial debt schedule for first cash flow calculation
         years = [f"Year {i}" for i in range(calculator.years + 1)]
         initial_debt_df = pd.DataFrame(
-            {year: [0, 0, 0, 0] for year in years},
-            index=['Beginning Debt', 'Interest Payment', 'Debt Paydown', 'Ending Debt']
+            index=['Beginning Debt', 'Interest Payment', 'Debt Paydown', 'Ending Debt'],
+            columns=years,
+            data=np.zeros((4, calculator.years + 1))
         )
         
         # Calculate initial cash flows
@@ -227,55 +210,31 @@ def main():
             capex_pct
         )
         
-        # Calculate cash schedule
-        cash_schedule = calculator.calculate_cash_schedule(
-            financial_schedule['Free Cash Flow'],
-            debt_schedule.loc['Debt Paydown']
-        )
-        
         # Calculate exit values
         exit_ebitda = ebitda_schedule[-1]
         exit_tev = exit_ebitda * exit_multiple
         
         # Calculate equity values and IRRs
         entry_equity = entry_tev - entry_debt
-        exit_equity = exit_tev - debt_schedule['Year 5']['Ending Debt']
+        exit_equity = exit_tev - debt_schedule.loc['Ending Debt', 'Year 5']
         
-        # Debug information about cash flows
-        st.subheader("Debug Information")
-        st.write("Key Values:")
-        st.write(f"Entry TEV: ${entry_tev:,.1f}M")
-        st.write(f"Entry Debt: ${entry_debt:,.1f}M")
-        st.write(f"Entry Equity: ${entry_equity:,.1f}M")
-        st.write(f"Exit TEV: ${exit_tev:,.1f}M")
-        st.write(f"Exit Debt: ${debt_schedule['Year 5']['Ending Debt']:,.1f}M")
-        st.write(f"Exit Equity: ${exit_equity:,.1f}M")
-        
-        # Show intermediate cash flows
-        st.write("\nIntermediate Cash Flows:")
-        yearly_flows = pd.DataFrame({
-            'Year': range(calculator.years + 1),
-            'Free Cash Flow ($M)': financial_schedule['Free Cash Flow'].values,
-            'Debt Balance ($M)': debt_schedule.loc['Ending Debt'].values
-        })
-        st.dataframe(yearly_flows.round(1))
-        
-        # Calculate IRRs
         cash_flows = financial_schedule['Free Cash Flow'].values
-        st.write("\nLevered IRR Calculation:")
-        levered_irr = calculator.calculate_irr(entry_equity, exit_equity, cash_flows)
         
         # Calculate unlevered values
         unlevered_entry_equity = entry_tev  # For unlevered, entry equity equals TEV
         unlevered_exit_equity = exit_tev    # For unlevered, exit equity equals TEV
-        
-        st.write("\nUnlevered IRR Calculation:")
         unlevered_cash_flows = calculator.calculate_cash_flows(
             ebitda_schedule,
             initial_debt_df,
             tax_rate,
             capex_pct
         )
+        
+        # Calculate IRRs
+        st.write("\nLevered IRR Calculation:")
+        levered_irr = calculator.calculate_irr(entry_equity, exit_equity, cash_flows)
+        
+        st.write("\nUnlevered IRR Calculation:")
         unlevered_irr = calculator.calculate_irr(
             unlevered_entry_equity, 
             unlevered_exit_equity, 
@@ -295,6 +254,10 @@ def main():
         
         # Cash Schedule
         st.subheader("Cash Schedule ($M)")
+        cash_schedule = calculator.calculate_cash_schedule(
+            financial_schedule['Free Cash Flow'].values,
+            debt_schedule.loc['Debt Paydown'].values
+        )
         st.dataframe(cash_schedule.round(1))
         
         # IRR Results
