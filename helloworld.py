@@ -33,6 +33,7 @@ def calculate_lbo_irr(
     for year in range(1, years + 1):
         interest_payment = round(debt_balance * interest_rate, 1)
         ebitda = round(ebitda_projection[year], 1)
+        capex = round(ebitda * capex_percent, 1)
         depreciation = capex
         taxable_income = ebitda - depreciation - interest_payment
         taxes = round(taxable_income * tax_rate, 1)
