@@ -21,11 +21,13 @@ def calculate_lbo_irr(
     exit_tev = exit_ebitda * exit_multiple
     
     debt_balance = entry_debt
+    debt_schedule = []
     cash_balance = 0.0
     entry_equity = round(entry_tev - entry_debt, 1)
     cash_flows = [-entry_equity]
     
     for year in range(1, years + 1):
+        beginning_debt = debt_balance
         interest_payment = round(debt_balance * interest_rate, 1)
         ebitda = round(ebitda_projection[year], 1)
         capex = round(ebitda * capex_percent, 1)
@@ -35,6 +37,7 @@ def calculate_lbo_irr(
         free_cash_flow = round(ebitda - capex - interest_payment - taxes, 1)
         
         debt_repayment = round(min(free_cash_flow, debt_balance), 1)
+                debt_schedule.append([year, beginning_debt, debt_repayment, round(debt_balance - debt_repayment, 1)])
         debt_balance = round(debt_balance - debt_repayment, 1)
         remaining_cash = round(free_cash_flow - debt_repayment, 1)
         cash_balance = round(cash_balance + remaining_cash, 1)
@@ -42,7 +45,7 @@ def calculate_lbo_irr(
         cash_flows.append(free_cash_flow)
     
     cash_flows.append(exit_tev - debt_balance + cash_balance)
-    return npf.irr(cash_flows) if any(cash_flows) else None, cash_flows, ebitda_projection, exit_tev, debt_balance, cash_balance, entry_equity
+    return npf.irr(cash_flows) if any(cash_flows) else None, cash_flows, ebitda_projection, exit_tev, debt_balance, cash_balance, entry_equity, debt_schedule
 
 st.title("LBO Model Calculator")
 
@@ -56,7 +59,7 @@ interest_rate = float(st.number_input("Interest Rate (%)", value=8.0)) / 100
 capex_percent = float(st.number_input("Capex as % of EBITDA", value=5.0)) / 100
 
 if st.button("Calculate IRR"): 
-    irr, cash_flows, ebitda_projection, exit_tev, debt_balance, cash_balance, entry_equity = calculate_lbo_irr(
+    irr, cash_flows, ebitda_projection, exit_tev, debt_balance, cash_balance, entry_equity, debt_schedule = calculate_lbo_irr(
         entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, entry_debt, tax_rate, interest_rate, capex_percent
     )
@@ -89,11 +92,8 @@ if st.button("Calculate IRR"):
     st.dataframe(financial_metrics)
     
     st.write("### Debt Schedule")
-    debt_schedule = pd.DataFrame({
-        "Metric": ["Entry Debt", "Exit Debt"],
-        "Value ($M)": [entry_debt, debt_balance]
-    })
-    st.dataframe(debt_schedule)
+    debt_schedule_df = pd.DataFrame(debt_schedule, columns=["Year", "Beginning Debt", "Debt Paydown", "Ending Debt"])
+    st.dataframe(debt_schedule_df)
     
     st.write("### Cash Schedule")
     cash_schedule = pd.DataFrame({
