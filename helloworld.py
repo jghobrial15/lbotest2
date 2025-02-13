@@ -107,8 +107,6 @@ if st.button("Calculate IRR"):
     equity_value_at_exit, irr, financials, debt_schedule, cash_schedule, equity_build, cash_flows = calculate_lbo_irr(
         entry_ebitda, ebitda_cagr, entry_tev,
         exit_multiple, entry_debt, tax_rate, interest_rate, capex_percent
-        entry_ebitda, ebitda_cagr, entry_tev,
-        exit_multiple, entry_debt, tax_rate, interest_rate
     )
     
     st.write(f"**Equity Value at Exit:** ${equity_value_at_exit:.1f}M")
