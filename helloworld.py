@@ -94,8 +94,9 @@ def calculate_lbo_irr(
         irr = npf.irr(cash_flows)
     
     unlevered_cash_flows = [-entry_tev]
+    unlevered_debt_balance = 0.0  # No leverage scenario
     for year in range(1, years + 1):
-        unlevered_cash_flows.append(financials[year][-1])
+            unlevered_cash_flows.append(financials[year][-1] + unlevered_debt_balance)
     unlevered_cash_flows[-1] += exit_tev
     unlevered_irr = npf.irr(unlevered_cash_flows)
     
@@ -107,7 +108,7 @@ def calculate_lbo_irr(
     
     irr_decomposition = pd.DataFrame({
         "Metric": ["EBITDA Growth", "Exit Multiple Change", "TEV Growth", "Yield", "Covariance", "Unlevered IRR", "Leverage Impact", "Levered IRR"],
-        "Value": [ebitda_cagr, annualized_exit_multiple_change, tev_growth, yield_rate, covariance, unlevered_irr, leverage_impact, irr]
+        "Value (%)": [f"{ebitda_cagr:.1%}", f"{annualized_exit_multiple_change:.1%}", f"{tev_growth:.1%}", f"{1 / (entry_tev / entry_unlevered_net_income):.1%}", f"{covariance:.1%}", f"{unlevered_irr:.1%}", f"{leverage_impact:.1%}", f"{irr:.1%}"]
     })
     
     if all(c <= 0 for c in cash_flows):
